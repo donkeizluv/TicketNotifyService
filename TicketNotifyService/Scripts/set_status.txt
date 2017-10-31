@@ -1,0 +1,3 @@
+﻿UPDATE {prefix}ticket
+SET {prefix}ticket.status_id = {from_status}
+WHERE {prefix}ticket.ticket_id = {to_status};

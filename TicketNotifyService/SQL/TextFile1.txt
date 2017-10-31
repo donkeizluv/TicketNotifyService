@@ -1,0 +1,23 @@
+﻿SELECT ost_file.key
+FROM ost_file
+WHERE ost_file.id = 6;
+
+SELECT ost_user_email.address AS `From`, ticket_id AS `TicketId`,  ost_ticket.number AS `TicketNumber`, ost_form.title AS `FormType`, field_id AS `FieldId`, ost_form_field.name AS `FieldVarName`, ost_form_field.label AS `FieldLabel`, ost_form_entry_values.value AS `FieldValue`
+FROM ost_ticket 
+LEFT JOIN ost_form_entry ON ost_ticket.ticket_id = ost_form_entry.object_id
+LEFT JOIN ost_form_entry_values ON  ost_form_entry_values.entry_id = ost_form_entry.id
+LEFT JOIN ost_form_field ON ost_form_field.id = ost_form_entry_values.field_id
+LEFT JOIN ost_form ON ost_form.id = ost_form_field.form_id
+LEFT JOIN ost_user_email ON ost_user_email.user_id = ost_ticket.user_id
+WHERE ticket_id = 13;
+
+
+
+UPDATE ost_ticket
+SET ost_ticket.status_id = 6
+WHERE ost_ticket.ticket_id = 13;
+
+
+SELECT ticket_id
+FROM ost_ticket
+WHERE status_id = 6

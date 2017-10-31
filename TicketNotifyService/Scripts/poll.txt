@@ -1,0 +1,3 @@
+﻿SELECT {prefix}file.key
+FROM {prefix}file
+WHERE {prefix}file.id = {status_id};

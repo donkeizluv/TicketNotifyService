@@ -1,0 +1,8 @@
+﻿SELECT {prefix}user_email.address AS `From`, ticket_id AS `TicketId`,  {prefix}ticket.number AS `TicketNumber`, {prefix}form.title AS `FormType`, field_id AS `FieldId`, {prefix}form_field.name AS `FieldVarName`, {prefix}form_field.label AS `FieldLabel`, {prefix}form_entry_values.value AS `FieldValue`
+FROM {prefix}ticket 
+LEFT JOIN {prefix}form_entry ON {prefix}ticket.ticket_id = {prefix}form_entry.object_id
+LEFT JOIN {prefix}form_entry_values ON  {prefix}form_entry_values.entry_id = {prefix}form_entry.id
+LEFT JOIN {prefix}form_field ON {prefix}form_field.id = {prefix}form_entry_values.field_id
+LEFT JOIN {prefix}form ON {prefix}form.id = {prefix}form_field.form_id
+LEFT JOIN {prefix}user_email ON {prefix}user_email.user_id = {prefix}ticket.user_id
+WHERE ticket_id = {ticket_id};

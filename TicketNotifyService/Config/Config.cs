@@ -1,4 +1,5 @@
-﻿using SharpConfig;
+﻿using MimeKit;
+using SharpConfig;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +39,25 @@ namespace TicketNotifyService.Config
         public int Port { get; set; }
         public string EmailUsername { get; set; }
         public string EmailPwd { get; set; }
+        public string EmailSuffix { get; set; }
 
+        //status
+        public string HelpdeskEmail = "helpdesk@hdsaison.com.vn";
+        public InternetAddress HelpdeskAddress
+        {
+            get
+            {
+                return new MailboxAddress(HelpdeskEmail);
+            }
+        }
+        public InternetAddress FromAddress
+        {
+            get
+            {
+                var address = EmailUsername.Contains("@") ? EmailUsername : EmailUsername + EmailSuffix;
+                return new MailboxAddress(address);
+            }
+        }
 
         public const string ConnectionStringTemplate = "Server={server}; database={database}; UID={user}; password={pwd}";
         private const string ServerToken = "{server}";
@@ -96,6 +115,7 @@ namespace TicketNotifyService.Config
             Port = emailSection[nameof(Port)].IntValue;
             EmailUsername = emailSection[nameof(EmailUsername)].StringValueTrimmed;
             EmailPwd = emailSection[nameof(EmailPwd)].StringValueTrimmed;
+            EmailSuffix = emailSection[nameof(EmailSuffix)].StringValueTrimmed;
 
         }
 

@@ -16,7 +16,7 @@ LEFT JOIN {prefix}user_email ON {prefix}user_email.user_id = {prefix}ticket.user
 LEFT JOIN {prefix}thread ON {prefix}ticket.ticket_id = {prefix}thread.id
 LEFT JOIN {prefix}thread_entry ON {prefix}thread_entry.thread_id = {prefix}thread.id
 WHERE ticket_id = {ticket_id} AND ost_form_entry_values.field_id NOT IN (20,22) AND
-ost_thread_entry.staff_id = 0; --skip other reply beside user default of ticket body
+ost_thread_entry.flags = 65;; --skip other reply beside user default of ticket body
 
 
 

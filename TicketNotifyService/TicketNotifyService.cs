@@ -14,6 +14,8 @@ using System.Timers;
 using TicketNotifyService.Email;
 using System.IO;
 using TicketNotifyService.Tickets;
+using MimeKit;
+using TicketNotifyService.Emails;
 
 namespace TicketNotifyService
 {
@@ -86,6 +88,7 @@ namespace TicketNotifyService
 
         private void Init()
         {
+            EmailParser.Config = _config;
             PollRate = _config.PollRate;
             _timer = new Timer(PollRate);
             _timer.Elapsed += _timer_Elapsed;
@@ -129,7 +132,14 @@ namespace TicketNotifyService
                     }
                 }
                 //tickets to email
-
+                var mails = new List<MimeMessage>();
+                foreach (var ticket in ticketList)
+                {
+                    mails.Add(EmailParser.ParseToEmail(ticket));
+                }
+                //send emails
+                _smtp.EnqueueEmail(mails);
+                _smtp.StartSending();
             }
         }
         
@@ -185,7 +195,7 @@ namespace TicketNotifyService
         {
             try
             {
-                _smtp = new SmtpMailSender(_config.DbServer, _config.Port);
+                _smtp = new SmtpMailSender(_config.SmtpServer, _config.Port);
                 _smtp.SetSmtpAccount(_config.EmailUsername, _config.EmailPwd);
                 return true;
             }

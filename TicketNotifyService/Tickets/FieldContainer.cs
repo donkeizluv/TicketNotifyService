@@ -10,7 +10,7 @@ namespace TicketNotifyService.Tickets
     {
         private static List<string> EmailVarNameList = new List<string>() {"direct_sup1", "direct_sup2" }; //configurable?
         private static List<string> AttachmentVarNameList = new List<string>() { "pics" };
-
+        private static List<string> ChoicesVarNameList = new List<string>() { "account_type" };
 
         public static readonly string FieldVarColumnName = "FieldVarName";
         public static readonly string FieldLabelColumnName = "FieldLabel";
@@ -32,6 +32,13 @@ namespace TicketNotifyService.Tickets
             get
             {
                 return AttachmentVarNameList.Contains(FieldVarName);
+            }
+        }
+        public bool IsChoices
+        {
+            get
+            {
+                return ChoicesVarNameList.Contains(FieldVarName);
             }
         }
 

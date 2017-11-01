@@ -39,7 +39,6 @@ namespace TicketNotifyService.Email
         /// <summary>
         /// anon
         /// </summary>
-        /// <param name="senderName"></param>
         /// <param name="server"></param>
         /// <param name="port"></param>
         public SmtpMailSender(string server, int port)
@@ -83,7 +82,7 @@ namespace TicketNotifyService.Email
         //    // 25 seems to do the trick
         //}
 
-        public string EmailAccount { get; set; }
+        //public string EmailAccount { get; set; }
         public string Server { get; }
         public int SleepInterval { get; set; } = 1500;
         public int Timeout { get; set; } = 30000;

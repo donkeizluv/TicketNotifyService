@@ -11,6 +11,10 @@ namespace TicketNotifyService.Config
     {
         private Configuration _config;
 
+        //missing:
+        //folder to scan for att
+        //sent email to?
+
         //general
         public int PollRate { get; set; }
 
@@ -21,10 +25,10 @@ namespace TicketNotifyService.Config
         public string Database { get; set; }
         public string TablePrefix { get; set; }
         //scripts
-        public string PollScript { get; set; }
-        public string GetDetailScript { get; set; }
-        public string UpdateStatusScript { get; set; }
-        public string GetFilenameScript { get; set; }
+        public string PollScriptFilename { get; set; }
+        public string GetDetailScriptFilename { get; set; }
+        public string UpdateStatusScriptFilename { get; set; }
+        public string GetFilenameScriptFilename { get; set; }
         //status id
         public int StatusToBePolled { get; set; }
         public int StatusToSet { get; set; }
@@ -35,6 +39,23 @@ namespace TicketNotifyService.Config
         public string EmailUsername { get; set; }
         public string EmailPwd { get; set; }
 
+
+        public const string ConnectionStringTemplate = "Server={server}; database={database}; UID={user}; password={pwd}";
+        private const string ServerToken = "{server}";
+        private const string DatabaseToken = "{database}";
+        private const string DbUserToken = "{user}";
+        private const string DbPwdToken = "{pwd}";
+
+        public string ConnectionString
+        {
+            get
+            {
+                return ConnectionStringTemplate.Replace(ServerToken, DbServer)
+                .Replace(DatabaseToken, Database)
+                .Replace(DbUserToken, DbUsername)
+                .Replace(DbPwdToken, DbPwd);
+            }
+        }
 
         public ServiceConfig(Configuration config)
         {
@@ -61,10 +82,10 @@ namespace TicketNotifyService.Config
             TablePrefix = connectionSection[nameof(TablePrefix)].StringValueTrimmed;
 
             //set scripts
-            PollScript = scriptSection[nameof(PollScript)].StringValueTrimmed;
-            GetDetailScript = scriptSection[nameof(GetDetailScript)].StringValueTrimmed;
-            UpdateStatusScript = scriptSection[nameof(UpdateStatusScript)].StringValueTrimmed;
-            GetFilenameScript = scriptSection[nameof(GetFilenameScript)].StringValueTrimmed;
+            PollScriptFilename = scriptSection[nameof(PollScriptFilename)].StringValueTrimmed;
+            GetDetailScriptFilename = scriptSection[nameof(GetDetailScriptFilename)].StringValueTrimmed;
+            UpdateStatusScriptFilename = scriptSection[nameof(UpdateStatusScriptFilename)].StringValueTrimmed;
+            GetFilenameScriptFilename = scriptSection[nameof(GetFilenameScriptFilename)].StringValueTrimmed;
 
             //set status
             StatusToBePolled = statusSection[nameof(StatusToBePolled)].IntValue;

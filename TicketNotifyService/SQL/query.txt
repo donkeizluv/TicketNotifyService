@@ -1,4 +1,12 @@
-﻿SELECT {prefix}ticket.ticket_id as `TicketId`, {prefix}ticket.created as `Created`, {prefix}user_email.address AS `From`, {prefix}form.title AS `FormType`, {prefix}thread_entry.body as `TicketBody`, {prefix}form_field.name AS `FieldVarName`, {prefix}form_field.label AS `FieldLabel`, {prefix}form_entry_values.value AS `FieldValue`
+﻿SELECT ticket_id
+FROM ost_ticket
+WHERE status_id = 6
+
+SELECT ost_file.key
+FROM ost_file
+WHERE ost_file.id = 6;
+
+SELECT {prefix}ticket.ticket_id as `TicketId`, {prefix}ticket.created as `Created`, {prefix}user_email.address AS `From`, {prefix}form.title AS `FormType`, {prefix}thread_entry.body as `TicketBody`, {prefix}form_field.name AS `FieldVarName`, {prefix}form_field.label AS `FieldLabel`, {prefix}form_entry_values.value AS `FieldValue`
 FROM {prefix}ticket 
 LEFT JOIN {prefix}form_entry ON {prefix}ticket.ticket_id = {prefix}form_entry.object_id
 LEFT JOIN {prefix}form_entry_values ON  {prefix}form_entry_values.entry_id = {prefix}form_entry.id
@@ -8,4 +16,11 @@ LEFT JOIN {prefix}user_email ON {prefix}user_email.user_id = {prefix}ticket.user
 LEFT JOIN {prefix}thread ON {prefix}ticket.ticket_id = {prefix}thread.id
 LEFT JOIN {prefix}thread_entry ON {prefix}thread_entry.thread_id = {prefix}thread.id
 WHERE ticket_id = {ticket_id} AND ost_form_entry_values.field_id NOT IN (20,22) AND
-ost_thread_entry.staff_id = 0;
+ost_thread_entry.staff_id = 0; --skip other reply beside user default of ticket body
+
+
+
+UPDATE {prefix}ticket
+SET {prefix}ticket.status_id = {to_status}
+WHERE {prefix}ticket.ticket_id = {tick_id};
+

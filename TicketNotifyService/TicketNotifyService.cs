@@ -12,6 +12,8 @@ using TicketNotifyService.Config;
 using TicketNotifyService.Log;
 using System.Timers;
 using TicketNotifyService.Email;
+using System.IO;
+using TicketNotifyService.Tickets;
 
 namespace TicketNotifyService
 {
@@ -19,6 +21,10 @@ namespace TicketNotifyService
     {
         internal static string ConfigFileName => string.Format(@"{0}\{1}", Program.ExeDir, CONFIG_FILE_NAME);
         private const string CONFIG_FILE_NAME = "config.ini";
+        internal static string ScriptFolderPath => string.Format(@"{0}\{1}", Program.ExeDir, SCRIPT_FOLDER);
+        private const string SCRIPT_FOLDER = "Scripts";
+
+
         public bool ConsoleMode { get; private set; } = false;
         private static void Log(string log) => _logger.Log(log);
         private static readonly ILogger _logger = LogManager.GetLogger(typeof(TicketNotifyService));
@@ -27,6 +33,11 @@ namespace TicketNotifyService
         private Timer _timer;
 
         public int PollRate { get; set; }
+        //scripts
+        public string PollScript { get; set; }
+        public string GetDetailScript { get; set; }
+        public string UpdateStatusScript { get; set; }
+        public string GetFilenameScript { get; set; }
 
         public TicketNotifyService()
         {
@@ -41,31 +52,7 @@ namespace TicketNotifyService
             OnStart(args);
             Console.ReadLine();
         }
-        //private void TestDapper()
-        //{
-        //    var sql = "SELECT ost_user_email.address AS `From`, ticket_id AS `TicketId`,  ost_ticket.number AS `TicketNumber`, ost_form.title AS `FormType`, field_id AS `FieldId`, ost_form_field.name AS `FieldVarName`, ost_form_field.label AS `FieldLabel`, ost_form_entry_values.value AS `FieldValue` "+
-        //            "FROM ost_ticket " +
-        //            "LEFT JOIN ost_form_entry ON ost_ticket.ticket_id = ost_form_entry.object_id " +
-        //            "LEFT JOIN ost_form_entry_values ON  ost_form_entry_values.entry_id = ost_form_entry.id " +
-        //            "LEFT JOIN ost_form_field ON ost_form_field.id = ost_form_entry_values.field_id " +
-        //            "LEFT JOIN ost_form ON ost_form.id = ost_form_field.form_id " +
-        //            "LEFT JOIN ost_user_email ON ost_user_email.user_id = ost_ticket.user_id " +
-        //            "WHERE status_id = 6";
 
-        //    using (IDbConnection db = new MySqlConnection("Server=10.8.0.13; database=osticket; UID=dev; password=760119"))
-        //    {
-        //        string readSp = sql;
-        //        var result = db.Query<dynamic>(readSp, commandType: CommandType.Text).ToList();
-        //        foreach (var row in result)
-        //        {
-        //            var dict = (IDictionary<string, object>)row;
-        //            foreach (var item in dict)
-        //            {
-        //                Console.WriteLine($"{item.Key}:{item.Value}");
-        //            }
-        //        }
-        //    }
-        //}
         protected override void OnStart(string[] args)
         {
             if(!ReadConfig())
@@ -76,7 +63,12 @@ namespace TicketNotifyService
             Log("Read config OK");
             //general settings & stuff
             Init();
-            
+            Log("Loading scripts...");
+            if(!LoadScripts())
+            {
+                Log("Load scripts failed -> Exit");
+                return;
+            }
             //SMTP settings
             if (!InitSmtp())
             {
@@ -85,11 +77,13 @@ namespace TicketNotifyService
             }
             StartWatcher();
         }
+
         private void StartWatcher()
         {
-            _timer.Start();
+            //_timer.Start();
             _timer_Elapsed(null, null); //poll now
         }
+
         private void Init()
         {
             PollRate = _config.PollRate;
@@ -103,6 +97,88 @@ namespace TicketNotifyService
             if (_smtp.IsThreadRunning) return;
 
             //do shit
+            DoShit();
+
+        }
+
+        private void DoShit()
+        {
+            using (IDbConnection connection = new MySqlConnection(_config.ConnectionString))
+            {
+                var ids = GetTicketIds(connection);
+                Log($"Tickets matched status count: {ids.Count()}");
+                if(ids.Count() < 1)
+                {
+                    Log("Nothing to do....");
+                    return;
+                }
+                //parse matched tickets
+                var ticketList = new List<Ticket>();
+                foreach (var id in ids)
+                {
+                    //get ticket details
+                    var details = GetTicketDetails(id, connection);
+                    try
+                    {
+                        ticketList.Add(TicketParser.ParseToTicket(details));
+                    }
+                    catch (InvalidDataException ex)
+                    {
+                        Log($"Parse ticket exception");
+                        Log(ex.Message);
+                    }
+                }
+                //tickets to email
+
+            }
+        }
+        
+        private const string TicketIdToken = "{ticket_id}";
+        private List<IDictionary<string, object>> GetTicketDetails(int ticketId, IDbConnection connection)
+        {
+            var list = new List<IDictionary<string, object>>();
+            var result = connection.Query<dynamic>(GetDetailScript.Replace(TicketIdToken, ticketId.ToString()), commandType: CommandType.Text);
+            foreach (var item in result)
+            {
+                list.Add((IDictionary<string, object>)item);
+            }
+            return list;
+        }
+
+        private const string PollStatusToken = "{status}";
+        private IEnumerable<int> GetTicketIds(IDbConnection connection)
+        {
+            var list = new List<int>();
+            var result = connection.Query<dynamic>(PollScript.Replace(PollStatusToken, _config.StatusToBePolled.ToString()), commandType: CommandType.Text);
+            foreach (var row in result)
+            {
+                var dict = (IDictionary<string, object>)row;
+                foreach (var item in dict)
+                {
+                    var v = item.Value;
+                    if (v == null) continue;
+
+                    if(!int.TryParse(v.ToString(), out var value))
+                    {
+                        Log($"Cant parse ticket_id: {item.Value.ToString()}");
+                        continue;
+                    }
+                    list.Add(value);
+                }
+            }
+            return list;
+        }
+        private const string ToStatusToken = "{to_status}";
+        //may need to use Execute instead of query
+        private void SetStatus(IDbConnection connection, int ticketId)
+        {
+            var result = connection.Query<dynamic>(UpdateStatusScript.Replace(ToStatusToken, _config.StatusToSet.ToString())
+                .Replace(TicketIdToken, ticketId.ToString()), commandType: CommandType.Text);
+        }
+        private const string FileIdToken = "{file_id}";
+        private string GetFileId(IDbConnection connection, int fileId)
+        {
+            return connection.QueryFirst<string>(GetFilenameScript.Replace(FileIdToken, fileId.ToString()), commandType: CommandType.Text);
         }
 
         private bool InitSmtp()
@@ -113,11 +189,13 @@ namespace TicketNotifyService
                 _smtp.SetSmtpAccount(_config.EmailUsername, _config.EmailPwd);
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log(ex.Message);
                 return false;
             }
         }
+
         private bool ReadConfig()
         {
             try
@@ -126,12 +204,46 @@ namespace TicketNotifyService
                 _config = new ServiceConfig(config);
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log(ex.Message);
                 return false;
             }
         }
 
+        private bool LoadScripts()
+        {
+            try
+            {
+                PollScript = File.ReadAllText($"{ScriptFolderPath}\\{_config.PollScriptFilename}")
+                    .Replace("{prefix}", _config.TablePrefix)
+                    .Replace("{status}", _config.StatusToBePolled.ToString());
+
+                GetDetailScript = File.ReadAllText($"{ScriptFolderPath}\\{_config.GetDetailScriptFilename}")
+                    .Replace("{prefix}", _config.TablePrefix);
+
+
+                GetFilenameScript = File.ReadAllText($"{ScriptFolderPath}\\{_config.GetFilenameScriptFilename}")
+                    .Replace("{prefix}", _config.TablePrefix);
+
+                UpdateStatusScript = File.ReadAllText($"{ScriptFolderPath}\\{_config.UpdateStatusScriptFilename}")
+                    .Replace("{prefix}", _config.TablePrefix)
+                    .Replace("{from_status", _config.StatusToBePolled.ToString())
+                    .Replace("{to_status}", _config.StatusToSet.ToString());
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message);
+                return false;
+            }
+        }
+        private string GetFileId(string json)
+        {
+            //exp {"bla.jpg":23434}
+            return json.Replace("{", string.Empty).Replace("}", string.Empty).Split(':').Last();
+        }
         protected override void OnStop()
         {
 

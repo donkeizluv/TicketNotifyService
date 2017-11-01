@@ -32,7 +32,7 @@ namespace TicketNotifyService.Email
         public string Username { get; set; }
         public string Pwd { get; set; }
         public int Port { get; set; } = 25;
-        public List<string> SkipList { get; set; }
+
         //public readonly Queue<MailMessage> _queueMail = new Queue<MailMessage>();
         private Thread _sendingThread;
 
@@ -129,11 +129,7 @@ namespace TicketNotifyService.Email
         {
             OnEmailSendingProgressChangedExit?.Invoke(this, new EmailSendingProgressChangedArgs(sent));
         }
-        private bool SkipEmail(string email)
-        {
-            if (SkipList == null) return false;
-            return SkipList.Contains(email);
-        }
+
         private void SendingThread()
         {
             int sleep = 0;
@@ -161,11 +157,6 @@ namespace TicketNotifyService.Email
                         return;
                     }
                     string address = anEmail.To.First().ToString();
-                    if (SkipEmail(address))
-                    {
-                        Log($"Skip -> {address}");
-                        continue;
-                    }
 
                     try //retry
                     {

@@ -28,6 +28,7 @@ namespace TicketNotifyService.Emails
             var additionalAddress = ParseFieldsToAddress(ticket.Fields);
             email.To.Add(Config.HelpdeskAddress);
             email.Cc.AddRange(additionalAddress);
+            email.Subject = SubjectName(ticket);
 
             //email content
             using (var writer = new HtmlTextWriter(stringWriter))
@@ -79,6 +80,10 @@ namespace TicketNotifyService.Emails
             }
             return email;
         }
+        private static string SubjectName(Ticket ticket)
+        {
+            return $"{ticket.FormType} - {ticket.From.ToString().Split('@').First()}";
+        }
         private static void WrapTag(HtmlTextWriter writer, string value, HtmlTextWriterTag tag, string style = "")
         {
             if(!string.IsNullOrEmpty(style))
@@ -99,11 +104,14 @@ namespace TicketNotifyService.Emails
             writer.RenderBeginTag(HtmlTextWriterTag.Table);
             foreach (var con in containers)
             {
-                if (con.IsAttachment || con.IsEmail) continue;
+                //if (con.IsAttachment || con.IsEmail) continue;
 
                 writer.RenderBeginTag(HtmlTextWriterTag.Tr);
                 WrapTag(writer, con.FieldLabel, HtmlTextWriterTag.Td, TdStyle);
-                WrapTag(writer, con.IsChoices ? CleanJson(con.FieldValue) : con.FieldValue, HtmlTextWriterTag.Td, TdStyle);
+                string value = con.FieldValue;
+                if (con.IsAttachment || con.IsChoices)
+                    value = CleanJson(value);
+                WrapTag(writer, value, HtmlTextWriterTag.Td, TdStyle);
                 writer.RenderEndTag();
             }
             writer.RenderEndTag();

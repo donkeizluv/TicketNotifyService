@@ -249,11 +249,7 @@ namespace TicketNotifyService
                 return false;
             }
         }
-        private string GetFileId(string json)
-        {
-            //exp {"bla.jpg":23434}
-            return json.Replace("{", string.Empty).Replace("}", string.Empty).Split(':').Last();
-        }
+
         protected override void OnStop()
         {
 

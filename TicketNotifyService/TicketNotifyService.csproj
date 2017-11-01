@@ -102,6 +102,7 @@
     <Compile Include="Tickets\Ticket.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="TODO.txt" />
     <None Include="App.config" />
     <Content Include="Config\config.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

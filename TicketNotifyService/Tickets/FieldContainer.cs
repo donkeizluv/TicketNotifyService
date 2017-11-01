@@ -8,7 +8,7 @@ namespace TicketNotifyService.Tickets
 {
     public class FieldContainer
     {
-        private static List<string> EmailVarNameList = new List<string>() {"direct_sup1", "direct_sup2" }; //configurable?
+        private static List<string> EmailVarNameList = new List<string>() {"direct_sup1", "direct_sup2", "bds_email" }; //configurable?
         private static List<string> AttachmentVarNameList = new List<string>() { "pics" };
         private static List<string> ChoicesVarNameList = new List<string>() { "account_type" };
 

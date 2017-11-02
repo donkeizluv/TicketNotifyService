@@ -11,11 +11,12 @@ using System.Threading.Tasks;
 using TicketNotifyService.Config;
 using TicketNotifyService.Log;
 using System.Timers;
-using TicketNotifyService.Email;
+using TicketNotifyService.Emails;
 using System.IO;
 using TicketNotifyService.Tickets;
 using MimeKit;
 using TicketNotifyService.Emails;
+using TicketNotifyService.SQL;
 
 namespace TicketNotifyService
 {
@@ -23,23 +24,18 @@ namespace TicketNotifyService
     {
         internal static string ConfigFileName => string.Format(@"{0}\{1}", Program.ExeDir, CONFIG_FILE_NAME);
         private const string CONFIG_FILE_NAME = "config.ini";
-        internal static string ScriptFolderPath => string.Format(@"{0}\{1}", Program.ExeDir, SCRIPT_FOLDER);
-        private const string SCRIPT_FOLDER = "Scripts";
 
-
-        public bool ConsoleMode { get; private set; } = false;
+        
         private static void Log(string log) => _logger.Log(log);
         private static readonly ILogger _logger = LogManager.GetLogger(typeof(TicketNotifyService));
         private ServiceConfig _config;
         private SmtpMailSender _smtp;
         private Timer _timer;
 
+        public bool ConsoleMode { get; private set; } = false;
+
         public int PollRate { get; set; }
-        //scripts
-        public string PollScript { get; set; }
-        public string GetDetailScript { get; set; }
-        public string UpdateStatusScript { get; set; }
-        public string GetFilenameScript { get; set; }
+
 
         public TicketNotifyService()
         {
@@ -65,12 +61,6 @@ namespace TicketNotifyService
             Log("Read config OK");
             //general settings & stuff
             Init();
-            Log("Loading scripts...");
-            if(!LoadScripts())
-            {
-                Log("Load scripts failed -> Exit");
-                return;
-            }
             //SMTP settings
             if (!InitSmtp())
             {
@@ -97,18 +87,22 @@ namespace TicketNotifyService
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             //skip if still working
-            if (_smtp.IsThreadRunning) return;
-
+            if (_smtp.IsThreadRunning)
+            {
+                Log("Thread is still running -> Skip");
+                return;
+            }
             //do shit
-            DoShit();
+            Do();
 
         }
 
-        private void DoShit()
+        private void Do()
         {
-            using (IDbConnection connection = new MySqlConnection(_config.ConnectionString))
+            //keep this SqlWrapper instance for the whole life off service?
+            using (var sql = new SqlWrapper(_config))
             {
-                var ids = GetTicketIds(connection);
+                var ids = sql.GetTicketIds();
                 Log($"Tickets matched status count: {ids.Count()}");
                 if(ids.Count() < 1)
                 {
@@ -120,7 +114,7 @@ namespace TicketNotifyService
                 foreach (var id in ids)
                 {
                     //get ticket details
-                    var details = GetTicketDetails(id, connection);
+                    var details = sql.GetTicketDetails(id);
                     try
                     {
                         ticketList.Add(TicketParser.ParseToTicket(details));
@@ -129,67 +123,28 @@ namespace TicketNotifyService
                     {
                         Log($"Parse ticket exception");
                         Log(ex.Message);
+                        Log(ex.StackTrace);
+                    }
+                    catch (InvalidCastException ex)
+                    {
+                        Log($"Parse ticket exception");
+                        Log(ex.Message);
+                        Log(ex.StackTrace);
                     }
                 }
                 //tickets to email
                 var mails = new List<MimeMessage>();
                 foreach (var ticket in ticketList)
                 {
-                    mails.Add(EmailParser.ParseToEmail(ticket));
+                    mails.Add(EmailParser.ParseToEmail(sql, ticket));
                 }
                 //send emails
                 _smtp.EnqueueEmail(mails);
-                _smtp.StartSending();
             }
+            _smtp.StartSending();
         }
         
-        private const string TicketIdToken = "{ticket_id}";
-        private List<IDictionary<string, object>> GetTicketDetails(int ticketId, IDbConnection connection)
-        {
-            var list = new List<IDictionary<string, object>>();
-            var result = connection.Query<dynamic>(GetDetailScript.Replace(TicketIdToken, ticketId.ToString()), commandType: CommandType.Text);
-            foreach (var item in result)
-            {
-                list.Add((IDictionary<string, object>)item);
-            }
-            return list;
-        }
-
-        private const string PollStatusToken = "{status}";
-        private IEnumerable<int> GetTicketIds(IDbConnection connection)
-        {
-            var list = new List<int>();
-            var result = connection.Query<dynamic>(PollScript.Replace(PollStatusToken, _config.StatusToBePolled.ToString()), commandType: CommandType.Text);
-            foreach (var row in result)
-            {
-                var dict = (IDictionary<string, object>)row;
-                foreach (var item in dict)
-                {
-                    var v = item.Value;
-                    if (v == null) continue;
-
-                    if(!int.TryParse(v.ToString(), out var value))
-                    {
-                        Log($"Cant parse ticket_id: {item.Value.ToString()}");
-                        continue;
-                    }
-                    list.Add(value);
-                }
-            }
-            return list;
-        }
-        private const string ToStatusToken = "{to_status}";
-        //may need to use Execute instead of query
-        private void SetStatus(IDbConnection connection, int ticketId)
-        {
-            var result = connection.Query<dynamic>(UpdateStatusScript.Replace(ToStatusToken, _config.StatusToSet.ToString())
-                .Replace(TicketIdToken, ticketId.ToString()), commandType: CommandType.Text);
-        }
-        private const string FileIdToken = "{file_id}";
-        private string GetFileId(IDbConnection connection, int fileId)
-        {
-            return connection.QueryFirst<string>(GetFilenameScript.Replace(FileIdToken, fileId.ToString()), commandType: CommandType.Text);
-        }
+        
 
         private bool InitSmtp()
         {
@@ -202,6 +157,7 @@ namespace TicketNotifyService
             catch (Exception ex)
             {
                 Log(ex.Message);
+                Log(ex.StackTrace);
                 return false;
             }
         }
@@ -216,36 +172,9 @@ namespace TicketNotifyService
             }
             catch (Exception ex)
             {
+                Log(ex.GetType().ToString());
                 Log(ex.Message);
-                return false;
-            }
-        }
-
-        private bool LoadScripts()
-        {
-            try
-            {
-                PollScript = File.ReadAllText($"{ScriptFolderPath}\\{_config.PollScriptFilename}")
-                    .Replace("{prefix}", _config.TablePrefix)
-                    .Replace("{status}", _config.StatusToBePolled.ToString());
-
-                GetDetailScript = File.ReadAllText($"{ScriptFolderPath}\\{_config.GetDetailScriptFilename}")
-                    .Replace("{prefix}", _config.TablePrefix);
-
-
-                GetFilenameScript = File.ReadAllText($"{ScriptFolderPath}\\{_config.GetFilenameScriptFilename}")
-                    .Replace("{prefix}", _config.TablePrefix);
-
-                UpdateStatusScript = File.ReadAllText($"{ScriptFolderPath}\\{_config.UpdateStatusScriptFilename}")
-                    .Replace("{prefix}", _config.TablePrefix)
-                    .Replace("{from_status", _config.StatusToBePolled.ToString())
-                    .Replace("{to_status}", _config.StatusToSet.ToString());
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log(ex.Message);
+                Log(ex.StackTrace);
                 return false;
             }
         }

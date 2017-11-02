@@ -5,15 +5,12 @@ using MimeKit;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using TicketNotifyService.Log;
 
-namespace TicketNotifyService.Email
+namespace TicketNotifyService.Emails
 {
     public delegate void EmailSendingThreadExitEventHandler(object sender, EmailSendingThreadEventArgs e);
 
@@ -157,6 +154,7 @@ namespace TicketNotifyService.Email
                     }
                     string address = anEmail.To.First().ToString();
 
+                    //TODO: use Folly
                     try //retry
                     {
                         //_client.Timeout = 1;
@@ -187,19 +185,19 @@ namespace TicketNotifyService.Email
             }
             catch (SocketException ex) when (ex.Message.Contains("No such host is known"))
             {
-                exMessage = "Invalid host name";
+                exMessage = ex.Message;
                 Log(exMessage);
                 unrecoverableEx = true;
             }
             catch (SocketException ex) when (ex.Message.Contains("No connection could be made because the target machine actively refused it"))
             {
-                exMessage = "Invalid port number or SMTP is closed";
+                exMessage = ex.Message;
                 Log(exMessage);
                 unrecoverableEx = true;
             }
             catch (AuthenticationException ex) when (ex.Message.Contains("AuthenticationInvalidCredentials"))
             {
-                exMessage = "Invalid credential";
+                exMessage = ex.Message;
                 Log(exMessage);
                 unrecoverableEx = true;
             }
@@ -232,6 +230,8 @@ namespace TicketNotifyService.Email
         private object _lock = new object();
         private void Log(string log)
         {
+            //not really need to lock here, since only 1 thread execution
+            //just in case... and in no ways seem to hurt anything :/
             lock (_lock)
             {
                 //File.AppendAllLines(LogPath, new List<string> { FormatLog(log) }, Encoding.UTF8);

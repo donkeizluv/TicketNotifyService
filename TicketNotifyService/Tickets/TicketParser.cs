@@ -30,7 +30,7 @@ namespace TicketNotifyService.Tickets
                         throw new InvalidDataException("TicketId is null");
                     if (!int.TryParse(value.ToString(), out var intValue))
                     {
-                        throw new InvalidCastException("Fail to parse TicketId");
+                        throw new InvalidDataException("Fail to parse TicketId to Int");
                     }
                     ticket.TicketId = intValue;
                 }
@@ -74,7 +74,7 @@ namespace TicketNotifyService.Tickets
                     var value = row[Ticket.FromColumnName].ToString();
                     if (!InternetAddress.TryParse(value, out var address))
                     {
-                        throw new InvalidCastException("Fail to parse From email address");
+                        throw new InvalidDataException("Fail to parse From email address");
                     }
                     ticket.From = address;
                 }

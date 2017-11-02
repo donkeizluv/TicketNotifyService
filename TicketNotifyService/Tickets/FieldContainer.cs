@@ -8,9 +8,9 @@ namespace TicketNotifyService.Tickets
 {
     public class FieldContainer
     {
-        private static List<string> EmailVarNameList = new List<string>() {"direct_sup1", "direct_sup2", "bds_email" }; //configurable?
-        private static List<string> AttachmentVarNameList = new List<string>() { "pics" };
-        private static List<string> ChoicesVarNameList = new List<string>() { "account_type" };
+        public static readonly List<string> EmailVarNameList = new List<string>() {"direct_sup1", "direct_sup2", "bds_email" }; //configurable?
+        public static readonly List<string> AttachmentVarNameList = new List<string>() { "pics" };
+        public static readonly List<string> ChoicesVarNameList = new List<string>() { "account_type" };
 
         public static readonly string FieldVarColumnName = "FieldVarName";
         public static readonly string FieldLabelColumnName = "FieldLabel";
@@ -20,6 +20,8 @@ namespace TicketNotifyService.Tickets
         public string FieldVarName { get; set; }
         public string FieldLabel { get; set; }
         public string FieldValue { get; set; }
+
+        //email parser will treat these with special care :)
         public bool IsEmail
         {
             get

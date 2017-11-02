@@ -2,6 +2,7 @@
 using SharpConfig;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,34 +13,45 @@ namespace TicketNotifyService.Config
     {
         private Configuration _config;
 
+        internal static string ScriptFolderPath => string.Format(@"{0}\{1}", Program.ExeDir, SCRIPT_FOLDER);
+        private const string SCRIPT_FOLDER = "Scripts";
         //missing:
         //folder to scan for att
         //sent email to?
 
         //general
-        public int PollRate { get; set; }
+        public int PollRate { get; private set; }
+        public string AttachmentRootFolder { get; set; }
 
         //connection
-        public string DbServer { get; set; }
-        public string DbUsername { get; set; }
-        public string DbPwd { get; set; }
-        public string Database { get; set; }
-        public string TablePrefix { get; set; }
+        public string DbServer { get; private set; }
+        public string DbUsername { get; private set; }
+        public string DbPwd { get; private set; }
+        public string Database { get; private set; }
+        public string TablePrefix { get; private set; }
         //scripts
-        public string PollScriptFilename { get; set; }
-        public string GetDetailScriptFilename { get; set; }
-        public string UpdateStatusScriptFilename { get; set; }
-        public string GetFilenameScriptFilename { get; set; }
+        public string PollScriptFilename { get; private set; }
+        public string GetDetailScriptFilename { get; private set; }
+        public string UpdateStatusScriptFilename { get; private set; }
+        public string GetFilenameScriptFilename { get; private set; }
+
+        //script content
+        public string PollScript { get; private set; }
+        public string GetDetailScript { get; private set; }
+        public string UpdateStatusScript { get; private set; }
+        public string GetFilenameScript { get; private set; }
+
+
         //status id
-        public int StatusToBePolled { get; set; }
-        public int StatusToSet { get; set; }
+        public int StatusToBePolled { get; private set; }
+        public int StatusToSet { get; private set; }
 
         //email
-        public string SmtpServer { get; set; }
-        public int Port { get; set; }
-        public string EmailUsername { get; set; }
-        public string EmailPwd { get; set; }
-        public string EmailSuffix { get; set; }
+        public string SmtpServer { get; private set; }
+        public int Port { get; private set; }
+        public string EmailUsername { get; private set; }
+        public string EmailPwd { get; private set; }
+        public string EmailSuffix { get; private set; }
 
         //status
         public string HelpdeskEmail = "helpdesk@hdsaison.com.vn";
@@ -92,6 +104,7 @@ namespace TicketNotifyService.Config
 
             //set gen
             PollRate = genSection[nameof(PollRate)].IntValue;
+            AttachmentRootFolder = genSection[nameof(AttachmentRootFolder)].StringValueTrimmed;
 
             //set connection
             DbServer = connectionSection[nameof(DbServer)].StringValueTrimmed;
@@ -117,7 +130,25 @@ namespace TicketNotifyService.Config
             EmailPwd = emailSection[nameof(EmailPwd)].StringValueTrimmed;
             EmailSuffix = emailSection[nameof(EmailSuffix)].StringValueTrimmed;
 
+            LoadScripts();
         }
+        private void LoadScripts()
+        {
+            PollScript = File.ReadAllText($"{ScriptFolderPath}\\{PollScriptFilename}")
+                     .Replace("{prefix}", TablePrefix)
+                     .Replace("{status}", StatusToBePolled.ToString());
 
+            GetDetailScript = File.ReadAllText($"{ScriptFolderPath}\\{GetDetailScriptFilename}")
+                .Replace("{prefix}", TablePrefix);
+
+
+            GetFilenameScript = File.ReadAllText($"{ScriptFolderPath}\\{GetFilenameScriptFilename}")
+                .Replace("{prefix}", TablePrefix);
+
+            UpdateStatusScript = File.ReadAllText($"{ScriptFolderPath}\\{UpdateStatusScriptFilename}")
+                .Replace("{prefix}", TablePrefix)
+                .Replace("{from_status", StatusToBePolled.ToString())
+                .Replace("{to_status}", StatusToSet.ToString());
+        }
     }
 }

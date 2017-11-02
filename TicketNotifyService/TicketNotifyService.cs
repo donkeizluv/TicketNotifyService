@@ -31,9 +31,6 @@ namespace TicketNotifyService
 
         public int PollRate { get; set; }
 
-        private bool _working = false;
-
-
         public TicketNotifyService()
         {
             InitializeComponent();
@@ -86,19 +83,19 @@ namespace TicketNotifyService
         private void _smtp_OnEmailSendingThreadExit(object sender, EmailSendingThreadEventArgs e)
         {
             Log("Sent completed");
-            _working = false;
+            _timer.Start(); //start timer again when done
         }
 
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             //skip if still working
-            if (_working || _smtp.IsThreadRunning)
+            if (_smtp.IsThreadRunning)
             {
                 Log("Thread or routine is still running -> Skip");
                 return;
             }
-            _working = true;
             //do shit
+            _timer.Stop(); //prevent elapse
             Do();
 
         }
@@ -113,7 +110,7 @@ namespace TicketNotifyService
                 if(ids.Count() < 1)
                 {
                     Log("Nothing to do....");
-                    _working = false;
+                    _timer.Start();
                     return;
                 }
                 //parse matched tickets

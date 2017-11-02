@@ -1,4 +1,5 @@
 ﻿using MimeKit;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -168,7 +169,7 @@ namespace TicketNotifyService.Emails
 
         private static string KeyPairsToString(List<KeyValuePair<string, string>> pairs, bool takePropName = false)
         {
-            if (pairs.Count < 1) return string.Empty;
+            if (pairs == null || pairs.Count < 1) return string.Empty;
             var listSep = " | ";
             var builder = new StringBuilder();
             if(takePropName)
@@ -182,12 +183,22 @@ namespace TicketNotifyService.Emails
         private static List<KeyValuePair<string, string>> JsonToKeyPairs(string json)
         {
             var list = new List<KeyValuePair<string, string>>();
-            var array = JObject.Parse(json);
-            foreach (JProperty prop in array.Properties())
+            try
             {
-                list.Add(new KeyValuePair<string, string>(prop.Name, prop.Value.ToString()));
+                
+                var array = JObject.Parse(json);
+                foreach (JProperty prop in array.Properties())
+                {
+                    list.Add(new KeyValuePair<string, string>(prop.Name, prop.Value.ToString()));
+                }
+                return list;
             }
-            return list;
+            catch (JsonReaderException ex)
+            {
+                Log($"Parse JSON object failed: {json}");
+                return list;
+            }
+
         }
 
         private static string SearchFile(string root, string searchString)

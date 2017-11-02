@@ -43,7 +43,7 @@ namespace TicketNotifyService.Emails
             var additionalAddress = ParseFieldsToAddress(_ticket.Fields);
             email.To.AddRange(new []{ Config.HelpdeskAddress, _ticket.From });
             email.Cc.AddRange(additionalAddress);
-            email.Subject = SubjectName(_ticket);
+            email.Subject = _ticket.Subject == string.Empty? SubjectName(_ticket) : _ticket.Subject;
 
             //email content
             using (var writer = new HtmlTextWriter(stringWriter))
@@ -87,15 +87,20 @@ namespace TicketNotifyService.Emails
                 writer.RenderEndTag(); //end BODY
                 writer.RenderEndTag(); //end HTML
 
-                var bodyBuilder = new BodyBuilder()
-                {
-                    HtmlBody = stringWriter.ToString()
-                };
-                email.Body = bodyBuilder.ToMessageBody();
+                AddBody(email, attParts, stringWriter.ToString());
             }
             return email;
         }
-
+        private static void AddBody(MimeMessage mail, List<MimePart> attParts, string body)
+        {
+            var multipart = new Multipart("mixed");
+            foreach (var att in attParts)
+            {
+                multipart.Add(att);
+            }
+            multipart.Add(MakeBodyPart(body));
+            mail.Body = multipart;
+        }
         private static string SubjectName(Ticket ticket)
         {
             return $"{ticket.FormType} - {ticket.From.ToString().Split('@').First()}";
@@ -111,31 +116,48 @@ namespace TicketNotifyService.Emails
         }
 
         private static string TdStyle = "border: 1px solid black;";
-        private void HandleContainerFields(HtmlTextWriter writer, MimeMessage email, out List<MimeParser> attachmentParts)
+        private static string TableStyle = "border-collapse: collapse;";
+        private void HandleContainerFields(HtmlTextWriter writer, MimeMessage email, out List<MimePart> attachmentParts)
         {
-            attachmentParts = new List<MimeParser>();
-
-            writer.AddAttribute(HtmlTextWriterAttribute.Style, "border-collapse: collapse;");
+            attachmentParts = new List<MimePart>();
+            writer.AddAttribute(HtmlTextWriterAttribute.Style, TableStyle);
             writer.AddAttribute(HtmlTextWriterAttribute.Cellpadding, "5");
             writer.RenderBeginTag(HtmlTextWriterTag.Table);
             foreach (var con in _ticket.Fields)
             {
-                //if (con.IsAttachment || con.IsEmail) continue;
+                if (con.IsExcludeInTable) continue;
 
                 writer.RenderBeginTag(HtmlTextWriterTag.Tr);
                 WrapTag(writer, con.FieldLabel, HtmlTextWriterTag.Td, TdStyle);
                 string value = con.FieldValue;
                 if (con.IsAttachment)
                 {
-                    var pairs = JsonToKeyPair(value);
-                    //add attachments
-                    //Log($"Cant get Filename for FileId [{value}] -> Skip this att");
+                    var pairs = JsonToKeyPairs(value);
+                    value = KeyPairsToString(pairs, true);
+                    foreach (var pair in pairs)
+                    {
+                        var fileId = pair.Value;
+                        var fileName = _wrapper.GetFilename(fileId);
+                        if (string.IsNullOrEmpty(fileName))
+                        {
+                            Log($"Cant get Filename for FileId [{fileId}] -> Skip this att");
+                            continue; //should not happen tho
+                        }
 
-
+                        var fullPath = SearchFile(Config.AttachmentRootFolder, fileName);
+                        if (!string.IsNullOrEmpty(fullPath))
+                        {
+                            attachmentParts.Add(MakeAttachment(fullPath, pair.Key));
+                        }
+                        else
+                        {
+                            Log($"Cant find file {fileName} -> Skip this att");
+                        }
+                    }
                 }
                 if (con.IsChoices)
                 {
-                    value = KeyPairsToString(JsonToKeyPair(value));
+                    value = KeyPairsToString(JsonToKeyPairs(value));
                 }
 
                 WrapTag(writer, value, HtmlTextWriterTag.Td, TdStyle);
@@ -144,24 +166,26 @@ namespace TicketNotifyService.Emails
             writer.RenderEndTag();
         }
 
-        private static string KeyPairsToString(List<KeyValuePair<string, string>> pairs)
+        private static string KeyPairsToString(List<KeyValuePair<string, string>> pairs, bool takePropName = false)
         {
+            if (pairs.Count < 1) return string.Empty;
             var listSep = " | ";
             var builder = new StringBuilder();
-            pairs.ForEach(p => builder.Append(p.Value).Append(listSep));
-            return builder.ToString().Remove(builder.ToString().Length - 1 - listSep.Length, listSep.Length);
+            if(takePropName)
+                pairs.ForEach(p => builder.Append(p.Key).Append(listSep));
+            else
+                pairs.ForEach(p => builder.Append(p.Value).Append(listSep));
+
+            return builder.ToString().Remove(builder.ToString().Length - listSep.Length, listSep.Length);
         }
 
-        private static List<KeyValuePair<string, string>> JsonToKeyPair(string json)
+        private static List<KeyValuePair<string, string>> JsonToKeyPairs(string json)
         {
             var list = new List<KeyValuePair<string, string>>();
-            var array = JArray.Parse(json);
-            foreach (JObject obj in array.Children<JObject>())
+            var array = JObject.Parse(json);
+            foreach (JProperty prop in array.Properties())
             {
-                foreach (JProperty singleProp in obj.Properties())
-                {
-                    list.Add(new KeyValuePair<string, string>(singleProp.Name, singleProp.Value.ToString()));
-                }
+                list.Add(new KeyValuePair<string, string>(prop.Name, prop.Value.ToString()));
             }
             return list;
         }
@@ -180,7 +204,7 @@ namespace TicketNotifyService.Emails
             }
         }
 
-        private static MimePart MakeAttachment(string fullFilename)
+        private static MimePart MakeAttachment(string fullFilename, string fileName)
         {
             if (string.IsNullOrEmpty(fullFilename))
                 throw new ArgumentException("attachment file name is null or empty");
@@ -189,14 +213,14 @@ namespace TicketNotifyService.Emails
                 ContentObject = new ContentObject(File.OpenRead(fullFilename), ContentEncoding.Default),
                 ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
                 ContentTransferEncoding = ContentEncoding.Base64,
-                FileName = Path.GetFileName(fullFilename)
+                FileName = Path.GetFileName(fileName)
             };
             return attachment;
         }
 
         private static TextPart MakeBodyPart(string body)
         {
-            var part = new TextPart("plain")
+            var part = new TextPart("html")
             {
                 Text = body
             };

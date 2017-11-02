@@ -10,7 +10,8 @@ namespace TicketNotifyService.Tickets
     {
         public static readonly List<string> EmailVarNameList = new List<string>() {"direct_sup1", "direct_sup2", "bds_email" }; //configurable?
         public static readonly List<string> AttachmentVarNameList = new List<string>() { "pics" };
-        public static readonly List<string> ChoicesVarNameList = new List<string>() { "account_type" };
+        public static readonly List<string> ChoicesVarNameList = new List<string>() { "account_type", "printer" };
+        public static readonly List<string> ExcludeVarNameList = new List<string>() { "subject", "desc" , "priority" };
 
         public static readonly string FieldVarColumnName = "FieldVarName";
         public static readonly string FieldLabelColumnName = "FieldLabel";
@@ -43,7 +44,13 @@ namespace TicketNotifyService.Tickets
                 return ChoicesVarNameList.Contains(FieldVarName);
             }
         }
-
+        public bool IsExcludeInTable
+        {
+            get
+            {
+                return ExcludeVarNameList.Contains(FieldVarName);
+            }
+        }
 
     }
 }

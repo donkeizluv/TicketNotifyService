@@ -18,8 +18,8 @@ namespace TicketNotifyService.SQL
         private IDbConnection _connection;
         public SqlWrapper(ServiceConfig config)
         {
-            _connection = new MySqlConnection(_config.ConnectionString);
             _config = config;
+            _connection = new MySqlConnection(_config.ConnectionString);
         }
         private const string TicketIdToken = "{ticket_id}";
         public List<IDictionary<string, object>> GetTicketDetails(int ticketId)

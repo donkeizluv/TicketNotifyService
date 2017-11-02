@@ -14,6 +14,17 @@ namespace TicketNotifyService.Tickets
         private static void Log(string log) => _logger.Log(log);
         private static readonly ILogger _logger = LogManager.GetLogger(typeof(TicketParser));
 
+        public static readonly string TicketIdColumnName = "TicketId";
+        public static readonly string CreatedColumnName = "Created";
+        public static readonly string FromColumnName = "From";
+        public static readonly string FormTypeColumnName = "FormType";
+
+        public static readonly string TicketSubjectVarName = "subject";
+        public static readonly string TicketBodyVarName = "desc";
+
+        public static readonly string GeneralFormType = "New Ticket";
+
+
         public static Ticket ParseToTicket(List<IDictionary<string, object>> detailRows)
         {
             var ticket = new Ticket()
@@ -25,7 +36,7 @@ namespace TicketNotifyService.Tickets
             {
                 if (ticket.TicketId == null) //if not set
                 {
-                    var value = row[Ticket.TicketIdColumnName];
+                    var value = row[TicketIdColumnName];
                     if (value == null)
                         throw new InvalidDataException("TicketId is null");
                     if (!int.TryParse(value.ToString(), out var intValue))
@@ -36,7 +47,7 @@ namespace TicketNotifyService.Tickets
                 }
                 if (ticket.Created == null)
                 {
-                    var value = row[Ticket.CreatedColumnName];
+                    var value = row[CreatedColumnName];
 
                     if (value != null && DateTime.TryParse(value.ToString(), out var dateValue))
                     {
@@ -49,29 +60,33 @@ namespace TicketNotifyService.Tickets
                         ticket.Created = DateTime.Today;
                     }
                 }
-                if (ticket.Body == null)
+                if (ticket.Body == null) //in New Ticket form type -> desc var
                 {
-                    var value = row[Ticket.TicketBodyColumnName];
-                    //acceptable to NULL
-                    if (value != null)
+                    var value = row[FormTypeColumnName];
+                    if(string.Compare(value.ToString(), GeneralFormType, true) == 0)
                     {
-                        ticket.Body = value.ToString();
+                        if (string.Compare(row[FieldContainer.FieldVarColumnName].ToString(), TicketBodyVarName, true) == 0)
+                            ticket.Body = (row[FieldContainer.FieldValueColumnName] ?? string.Empty).ToString();
                     }
-                    else
-                        ticket.Body = string.Empty;
+                }
+                if (ticket.Subject == null) //in New Ticket form type -> subject var
+                {
+                    var value = row[FormTypeColumnName];
+                    if (string.Compare(value.ToString(), GeneralFormType, true) == 0)
+                    {
+                        if (string.Compare(row[FieldContainer.FieldVarColumnName].ToString(), TicketSubjectVarName, true) == 0)
+                            ticket.Subject = (row[FieldContainer.FieldValueColumnName] ?? string.Empty).ToString();
+                    }
                 }
                 if (ticket.FormType == null)
                 {
-                    var value = row[Ticket.FormTypeColumnName];
-                    if (value == null)
-                    {
-                        throw new InvalidDataException("FormType is null");
-                    }
-                    ticket.FormType = value.ToString();
+                    var value = row[FormTypeColumnName];
+                    if(string.Compare(value.ToString(), "New Ticket", true) != 0)
+                        ticket.FormType = value.ToString();
                 }
                 if (ticket.From == null)
                 {
-                    var value = row[Ticket.FromColumnName].ToString();
+                    var value = row[FromColumnName].ToString();
                     if (!InternetAddress.TryParse(value, out var address))
                     {
                         throw new InvalidDataException("Fail to parse From email address");

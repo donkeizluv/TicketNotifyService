@@ -22,6 +22,7 @@ namespace TicketNotifyService.Config
         //general
         public int PollRate { get; private set; }
         public string AttachmentRootFolder { get; set; }
+        public string HelpdeskEmail { get; set; }
 
         //connection
         public string DbServer { get; private set; }
@@ -53,8 +54,6 @@ namespace TicketNotifyService.Config
         public string EmailPwd { get; private set; }
         public string EmailSuffix { get; private set; }
 
-        //status
-        public string HelpdeskEmail = "helpdesk@hdsaison.com.vn";
         public InternetAddress HelpdeskAddress
         {
             get
@@ -105,6 +104,7 @@ namespace TicketNotifyService.Config
             //set gen
             PollRate = genSection[nameof(PollRate)].IntValue;
             AttachmentRootFolder = genSection[nameof(AttachmentRootFolder)].StringValueTrimmed;
+            HelpdeskEmail = genSection[nameof(HelpdeskEmail)].StringValueTrimmed;
 
             //set connection
             DbServer = connectionSection[nameof(DbServer)].StringValueTrimmed;

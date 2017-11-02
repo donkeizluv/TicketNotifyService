@@ -72,7 +72,9 @@ namespace TicketNotifyService
 
         private void StartWatcher()
         {
-            //_timer.Start();
+#if! DEBUG
+            _timer.Start();
+#endif
             _timer_Elapsed(null, null); //poll now
         }
 
@@ -136,14 +138,21 @@ namespace TicketNotifyService
                 var mails = new List<MimeMessage>();
                 foreach (var ticket in ticketList)
                 {
-                    mails.Add(EmailParser.ParseToEmail(sql, ticket));
+                    using (var parser = new EmailParser(sql, ticket))
+                    {
+                        //try pattern
+                        //or cant fail here?
+                        mails.Add(parser.ToEmailMessage());
+                    }
                 }
                 //send emails
                 _smtp.EnqueueEmail(mails);
+                //set status away
+                ids.ToList().ForEach(id => sql.SetStatus(id));
             }
             _smtp.StartSending();
+            
         }
-        
         
 
         private bool InitSmtp()

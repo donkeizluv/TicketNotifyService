@@ -1,13 +1,8 @@
-﻿using Dapper;
-using MySql.Data.MySqlClient;
-using SharpConfig;
+﻿using SharpConfig;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.ServiceProcess;
-using System.Text;
-using System.Threading.Tasks;
 using TicketNotifyService.Config;
 using TicketNotifyService.Log;
 using System.Timers;
@@ -15,7 +10,7 @@ using TicketNotifyService.Emails;
 using System.IO;
 using TicketNotifyService.Tickets;
 using MimeKit;
-using TicketNotifyService.Emails;
+using System;
 using TicketNotifyService.SQL;
 
 namespace TicketNotifyService
@@ -35,6 +30,8 @@ namespace TicketNotifyService
         public bool ConsoleMode { get; private set; } = false;
 
         public int PollRate { get; set; }
+
+        private bool _working = false;
 
 
         public TicketNotifyService()
@@ -71,8 +68,8 @@ namespace TicketNotifyService
         }
 
         private void StartWatcher()
-        {
-#if! DEBUG
+        { 
+#if !DEBUG
             _timer.Start();
 #endif
             _timer_Elapsed(null, null); //poll now
@@ -86,14 +83,21 @@ namespace TicketNotifyService
             _timer.Elapsed += _timer_Elapsed;
         }
 
+        private void _smtp_OnEmailSendingThreadExit(object sender, EmailSendingThreadEventArgs e)
+        {
+            Log("Sent completed");
+            _working = false;
+        }
+
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             //skip if still working
-            if (_smtp.IsThreadRunning)
+            if (_working || _smtp.IsThreadRunning)
             {
-                Log("Thread is still running -> Skip");
+                Log("Thread or routine is still running -> Skip");
                 return;
             }
+            _working = true;
             //do shit
             Do();
 
@@ -109,6 +113,7 @@ namespace TicketNotifyService
                 if(ids.Count() < 1)
                 {
                     Log("Nothing to do....");
+                    _working = false;
                     return;
                 }
                 //parse matched tickets
@@ -150,8 +155,8 @@ namespace TicketNotifyService
                 //set status away
                 ids.ToList().ForEach(id => sql.SetStatus(id));
             }
+            Log("Start sending");
             _smtp.StartSending();
-            
         }
         
 
@@ -161,6 +166,7 @@ namespace TicketNotifyService
             {
                 _smtp = new SmtpMailSender(_config.SmtpServer, _config.Port);
                 _smtp.SetSmtpAccount(_config.EmailUsername, _config.EmailPwd);
+                _smtp.OnEmailSendingThreadExit += _smtp_OnEmailSendingThreadExit;
                 return true;
             }
             catch (Exception ex)

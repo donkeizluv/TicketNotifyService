@@ -78,7 +78,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Emails\EmailParser.cs" />
+    <Compile Include="Emails\EmailComposer.cs" />
     <Compile Include="Emails\SmtpMailSender.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\LogManager.cs" />

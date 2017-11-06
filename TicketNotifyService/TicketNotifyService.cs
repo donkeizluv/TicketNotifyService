@@ -74,7 +74,7 @@ namespace TicketNotifyService
 
         private void Init()
         {
-            EmailParser.Config = _config;
+            EmailComposer.Config = _config;
             PollRate = _config.PollRate;
             _timer = new Timer(PollRate);
             _timer.Elapsed += _timer_Elapsed;
@@ -140,7 +140,7 @@ namespace TicketNotifyService
                 var mails = new List<MimeMessage>();
                 foreach (var ticket in ticketList)
                 {
-                    using (var parser = new EmailParser(sql, ticket))
+                    using (var parser = new EmailComposer(sql, ticket))
                     {
                         //try pattern
                         //or cant fail here?

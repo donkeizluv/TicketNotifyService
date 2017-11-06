@@ -87,7 +87,7 @@ namespace TicketNotifyService.Tickets
                 if (ticket.From == null)
                 {
                     var value = row[FromColumnName].ToString();
-                    if (!InternetAddress.TryParse(value, out var address))
+                    if (!MailboxAddress.TryParse(value, out var address))
                     {
                         throw new InvalidDataException("Fail to parse From email address");
                     }

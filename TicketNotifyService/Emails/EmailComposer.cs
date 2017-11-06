@@ -17,17 +17,17 @@ namespace TicketNotifyService.Emails
     /// <summary>
     /// this class is intented to use in small scope
     /// </summary>
-    public class EmailParser : IDisposable
+    public class EmailComposer : IDisposable
     {
         public static ServiceConfig Config;
 
         private static void Log(string log) => _logger.Log(log);
-        private static readonly ILogger _logger = LogManager.GetLogger(typeof(EmailParser));
+        private static readonly ILogger _logger = LogManager.GetLogger(typeof(EmailComposer));
 
         private SqlWrapper _wrapper;
         private Ticket _ticket;
 
-        public EmailParser(SqlWrapper sql, Ticket ticket)
+        public EmailComposer(SqlWrapper sql, Ticket ticket)
         {
             _wrapper = sql;
             _ticket = ticket;
@@ -63,7 +63,7 @@ namespace TicketNotifyService.Emails
 
                 //form type
                 writer.RenderBeginTag(HtmlTextWriterTag.P);
-                writer.RenderBeginTag(HtmlTextWriterTag.H3);
+                writer.RenderBeginTag(HtmlTextWriterTag.H4);
                 writer.Write(_ticket.FormType);
                 writer.RenderEndTag();
                 writer.RenderEndTag();
@@ -73,6 +73,13 @@ namespace TicketNotifyService.Emails
                 writer.RenderBeginTag(HtmlTextWriterTag.P);
                 writer.RenderBeginTag(HtmlTextWriterTag.H4);
                 writer.Write(_ticket.Created.ToString());
+                writer.RenderEndTag();
+                writer.RenderEndTag();
+
+                //From
+                writer.RenderBeginTag(HtmlTextWriterTag.P);
+                writer.RenderBeginTag(HtmlTextWriterTag.H4);
+                writer.Write(((MailboxAddress)_ticket.From).Address);
                 writer.RenderEndTag();
                 writer.RenderEndTag();
 
@@ -133,8 +140,9 @@ namespace TicketNotifyService.Emails
                 string value = con.FieldValue;
                 if (con.IsAttachment)
                 {
+                    //handle attachments
                     var pairs = JsonToKeyPairs(value);
-                    value = KeyPairsToString(pairs, true);
+                    //value = KeyPairsToString(pairs, true);
                     foreach (var pair in pairs)
                     {
                         var fileId = pair.Value;
@@ -155,9 +163,12 @@ namespace TicketNotifyService.Emails
                             Log($"Cant find file {fileName} -> Skip this att");
                         }
                     }
+                    //dont values print for attachments
+                    continue;
                 }
                 if (con.IsChoices)
                 {
+                    //print formated choices
                     value = KeyPairsToString(JsonToKeyPairs(value));
                 }
 
@@ -238,15 +249,15 @@ namespace TicketNotifyService.Emails
             return part;
         }
 
-        private static List<InternetAddress> ParseFieldsToAddress(List<FieldContainer> containers)
+        private static List<MailboxAddress> ParseFieldsToAddress(List<FieldContainer> containers)
         {
-            var emails = new List<InternetAddress>();
+            var emails = new List<MailboxAddress>();
             foreach (var container in containers)
             {
                 if (string.IsNullOrEmpty(container.FieldValue)) continue;
                 if(container.IsEmail)
                 {
-                    if(InternetAddress.TryParse(container.FieldValue, out var email))
+                    if(MailboxAddress.TryParse(container.FieldValue, out var email))
                     {
                         emails.Add(email);
                         continue;

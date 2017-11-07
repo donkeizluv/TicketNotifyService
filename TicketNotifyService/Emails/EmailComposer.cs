@@ -79,7 +79,7 @@ namespace TicketNotifyService.Emails
                 //From
                 writer.RenderBeginTag(HtmlTextWriterTag.P);
                 writer.RenderBeginTag(HtmlTextWriterTag.H4);
-                writer.Write(((MailboxAddress)_ticket.From).Address);
+                writer.Write($"From: {_ticket.From.Address}");
                 writer.RenderEndTag();
                 writer.RenderEndTag();
 
@@ -135,8 +135,6 @@ namespace TicketNotifyService.Emails
             {
                 if (con.IsExcludeInTable) continue;
 
-                writer.RenderBeginTag(HtmlTextWriterTag.Tr);
-                WrapTag(writer, con.FieldLabel, HtmlTextWriterTag.Td, TdStyle);
                 string value = con.FieldValue;
                 if (con.IsAttachment)
                 {
@@ -171,7 +169,8 @@ namespace TicketNotifyService.Emails
                     //print formated choices
                     value = KeyPairsToString(JsonToKeyPairs(value));
                 }
-
+                writer.RenderBeginTag(HtmlTextWriterTag.Tr);
+                WrapTag(writer, con.FieldLabel, HtmlTextWriterTag.Td, TdStyle);
                 WrapTag(writer, value, HtmlTextWriterTag.Td, TdStyle);
                 writer.RenderEndTag();
             }

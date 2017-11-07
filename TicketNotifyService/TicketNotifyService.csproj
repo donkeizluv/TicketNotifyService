@@ -80,11 +80,11 @@
   <ItemGroup>
     <Compile Include="Emails\EmailComposer.cs" />
     <Compile Include="Emails\SmtpMailSender.cs" />
-    <Compile Include="Log\ILogger.cs" />
-    <Compile Include="Log\LogManager.cs" />
-    <Compile Include="Log\NewLogEventArgs.cs" />
-    <Compile Include="Log\OnNewLogHandler.cs" />
-    <Compile Include="Log\SimpleLogger.cs" />
+    <Compile Include="Logger\ILogger.cs" />
+    <Compile Include="Logger\LogManager.cs" />
+    <Compile Include="Logger\NewLogEventArgs.cs" />
+    <Compile Include="Logger\OnNewLogHandler.cs" />
+    <Compile Include="Logger\SimpleLogger.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>
     </Compile>

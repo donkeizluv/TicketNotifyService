@@ -20,12 +20,26 @@ namespace TicketNotifyService
         internal static string ConfigFileName => string.Format(@"{0}\{1}", Program.ExeDir, CONFIG_FILE_NAME);
         private const string CONFIG_FILE_NAME = "config.ini";
 
-        
-        private static void Log(string log) => _logger.Log(log);
+
+        private static void Log(string log, bool isVerbose = false)
+        {
+            if (OutputVerboseLog)
+            {
+                _logger.Log(log);
+            }
+            else
+            {
+                if (!isVerbose)
+                    _logger.Log(log);
+            }
+
+        }
+
         private static readonly ILogger _logger = LogManager.GetLogger(typeof(TicketNotifyService));
         private ServiceConfig _config;
         private SmtpMailSender _smtp;
         private Timer _timer;
+        public static bool OutputVerboseLog { get; set; }
 
         public bool ConsoleMode { get; private set; } = false;
 
@@ -78,6 +92,7 @@ namespace TicketNotifyService
             PollRate = _config.PollRate;
             _timer = new Timer(PollRate);
             _timer.Elapsed += _timer_Elapsed;
+            OutputVerboseLog = _config.VerboseLog;
         }
 
         private void _smtp_OnEmailSendingThreadExit(object sender, EmailSendingThreadEventArgs e)
@@ -88,16 +103,33 @@ namespace TicketNotifyService
 
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            //skip if still working
-            if (_smtp.IsThreadRunning)
+            //TODO: monitor ex overtime to catch specific ex
+            try
             {
-                Log("Thread or routine is still running -> Skip");
-                return;
+                //skip if still working
+                if (_smtp.IsThreadRunning)
+                {
+                    Log("Thread or routine is still running -> Skip");
+                    return;
+                }
+                //do shit
+                _timer.Stop(); //prevent elapse
+                Do();
             }
-            //do shit
-            _timer.Stop(); //prevent elapse
-            Do();
+            catch (Exception ex)
+            {
+                Log("Exception in routine:");
+                Log(ex.Message);
+                Log(ex.StackTrace);
 
+                if(ex.InnerException != null)
+                {
+                    var inner = ex.InnerException;
+                    Log("Inner Ex:");
+                    Log(inner.Message);
+                    Log(inner.StackTrace);
+                }
+            }
         }
 
         private void Do()
@@ -106,13 +138,13 @@ namespace TicketNotifyService
             using (var sql = new SqlWrapper(_config))
             {
                 var ids = sql.GetTicketIds();
-                Log($"Tickets matched status count: {ids.Count()}");
                 if(ids.Count() < 1)
                 {
-                    Log("Nothing to do....");
+                    Log("Nothing to do....", true);
                     _timer.Start();
                     return;
                 }
+                Log($"Tickets matched status count: {ids.Count()}");
                 //parse matched tickets
                 var ticketList = new List<Ticket>();
                 foreach (var id in ids)

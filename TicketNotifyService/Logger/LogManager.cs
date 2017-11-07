@@ -8,9 +8,9 @@ namespace TicketNotifyService.Log
     public static class LogManager
     {
         private const string LogFileName = "log.txt";
-        private static readonly List<string> CacheLogs = new List<string>();
         private static readonly List<ILogger> ListLogger = new List<ILogger>();
         private static readonly object WriteLogLocker = new object();
+
 
         static LogManager()
         {
@@ -41,22 +41,8 @@ namespace TicketNotifyService.Log
         {
             if (IsConsole)
                 Console.WriteLine(FormatLog(log));
-            try
-            {
-                if (CacheLogs.Count > 0) //try to write failed log first
-                {
-                    File.AppendAllLines(LogPath, CacheLogs, Encoding.UTF8);
-                    CacheLogs.Clear();
-                }
-                //write new log
-                File.AppendAllLines(LogPath, new List<string> {FormatLog(log)}, Encoding.UTF8);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                CacheLogs.Add("UnauthorizedAccessException -> store log to try later.");
-                CacheLogs.Add(FormatLog(log));
-                //cache message to try later
-            }
+            //write new log
+            File.AppendAllLines(LogPath, new string[] { FormatLog(log) }, Encoding.UTF8);
         }
 
         private static string FormatLog(string log)

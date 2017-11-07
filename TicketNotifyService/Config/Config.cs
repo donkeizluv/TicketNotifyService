@@ -23,6 +23,8 @@ namespace TicketNotifyService.Config
         public int PollRate { get; private set; }
         public string AttachmentRootFolder { get; set; }
         public string HelpdeskEmail { get; set; }
+        public bool VerboseLog { get; set; }
+
 
         //connection
         public string DbServer { get; private set; }
@@ -105,6 +107,7 @@ namespace TicketNotifyService.Config
             PollRate = genSection[nameof(PollRate)].IntValue;
             AttachmentRootFolder = genSection[nameof(AttachmentRootFolder)].StringValueTrimmed;
             HelpdeskEmail = genSection[nameof(HelpdeskEmail)].StringValueTrimmed;
+            VerboseLog = genSection[nameof(VerboseLog)].BoolValue;
 
             //set connection
             DbServer = connectionSection[nameof(DbServer)].StringValueTrimmed;

@@ -1,5 +1,6 @@
-﻿SELECT {prefix}ticket.ticket_id as `TicketId`, {prefix}ticket.created as `Created`, {prefix}user_email.address AS `From`, {prefix}form.title AS `FormType`, {prefix}form_field.name AS `FieldVarName`, {prefix}form_field.label AS `FieldLabel`, {prefix}form_entry_values.value AS `FieldValue`
+﻿SELECT {prefix}ticket.ticket_id as `TicketId`, {prefix}ticket.created as `Created`, {prefix}user_email.address AS `From`, {prefix}form.title AS `FormType`, {prefix}form_field.name AS `FieldVarName`, {prefix}form_field.label AS `FieldLabel`, {prefix}form_entry_values.value AS `FieldValue`, {prefix}help_topic.topic as `Topic`
 FROM {prefix}ticket 
+LEFT JOIN {prefix}help_topic ON {prefix}ticket.topic_id = {prefix}help_topic.topic_id
 LEFT JOIN {prefix}form_entry ON {prefix}ticket.ticket_id = {prefix}form_entry.object_id
 LEFT JOIN {prefix}form_entry_values ON  {prefix}form_entry_values.entry_id = {prefix}form_entry.id
 LEFT JOIN {prefix}form_field ON {prefix}form_field.id = {prefix}form_entry_values.field_id

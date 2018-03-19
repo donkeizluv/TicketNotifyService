@@ -61,13 +61,24 @@ namespace TicketNotifyService.Emails
                 writer.RenderBeginTag(HtmlTextWriterTag.Body);
                 //content goes here
 
+                //Ticket id
+                writer.AddAttribute(HtmlTextWriterAttribute.Href, $"{Config.OpenTicketUrl}{_ticket.TicketId}");
+                writer.RenderBeginTag(HtmlTextWriterTag.A);
+                writer.Write("Open ticket");
+                writer.RenderEndTag();
                 //form type
+                //writer.RenderBeginTag(HtmlTextWriterTag.P);
+                //writer.RenderBeginTag(HtmlTextWriterTag.H4);
+                //writer.Write(_ticket.FormType);
+                //writer.RenderEndTag();
+                //writer.RenderEndTag();
+                //Ticket id
+
                 writer.RenderBeginTag(HtmlTextWriterTag.P);
                 writer.RenderBeginTag(HtmlTextWriterTag.H4);
-                writer.Write(_ticket.FormType);
+                writer.Write($"Id: {_ticket.TicketId}");
                 writer.RenderEndTag();
                 writer.RenderEndTag();
-
 
                 //created on
                 writer.RenderBeginTag(HtmlTextWriterTag.P);
@@ -75,14 +86,6 @@ namespace TicketNotifyService.Emails
                 writer.Write(_ticket.Created.ToString());
                 writer.RenderEndTag();
                 writer.RenderEndTag();
-
-                //From
-                writer.RenderBeginTag(HtmlTextWriterTag.P);
-                writer.RenderBeginTag(HtmlTextWriterTag.H4);
-                writer.Write($"From: {_ticket.From.Address}");
-                writer.RenderEndTag();
-                writer.RenderEndTag();
-
 
                 //ticket body
                 writer.RenderBeginTag(HtmlTextWriterTag.P);
@@ -92,6 +95,12 @@ namespace TicketNotifyService.Emails
                 //write fields
                 HandleContainerFields(writer, email, out var attParts);
 
+                //From
+                writer.RenderBeginTag(HtmlTextWriterTag.P);
+                writer.RenderBeginTag(HtmlTextWriterTag.H4);
+                writer.Write($"From: {_ticket.From.Address}");
+                writer.RenderEndTag();
+                writer.RenderEndTag();
                 writer.RenderEndTag(); //end BODY
                 writer.RenderEndTag(); //end HTML
 
@@ -144,6 +153,7 @@ namespace TicketNotifyService.Emails
                     foreach (var pair in pairs)
                     {
                         var fileId = pair.Value;
+                        //_logger.Log($"Get fileId: {fileId}");
                         var fileName = _wrapper.GetFilename(fileId);
                         if (string.IsNullOrEmpty(fileName))
                         {
@@ -164,7 +174,7 @@ namespace TicketNotifyService.Emails
                     //dont values print for attachments
                     continue;
                 }
-                if (con.IsChoices)
+                if (con.IsChoices || con.IsJSONArray)
                 {
                     //print formated choices
                     value = KeyPairsToString(JsonToKeyPairs(value));

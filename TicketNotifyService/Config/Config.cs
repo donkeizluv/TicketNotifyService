@@ -24,7 +24,7 @@ namespace TicketNotifyService.Config
         public string AttachmentRootFolder { get; set; }
         public string HelpdeskEmail { get; set; }
         public bool VerboseLog { get; set; }
-
+        public string OpenTicketUrl { get; set; }
 
         //connection
         public string DbServer { get; private set; }
@@ -105,33 +105,34 @@ namespace TicketNotifyService.Config
 
             //set gen
             PollRate = genSection[nameof(PollRate)].IntValue;
-            AttachmentRootFolder = genSection[nameof(AttachmentRootFolder)].StringValueTrimmed;
-            HelpdeskEmail = genSection[nameof(HelpdeskEmail)].StringValueTrimmed;
+            AttachmentRootFolder = genSection[nameof(AttachmentRootFolder)].StringValue;
+            HelpdeskEmail = genSection[nameof(HelpdeskEmail)].StringValue;
             VerboseLog = genSection[nameof(VerboseLog)].BoolValue;
+            OpenTicketUrl = genSection[nameof(OpenTicketUrl)].StringValue;
 
             //set connection
-            DbServer = connectionSection[nameof(DbServer)].StringValueTrimmed;
-            DbUsername = connectionSection[nameof(DbUsername)].StringValueTrimmed;
-            DbPwd = connectionSection[nameof(DbPwd)].StringValueTrimmed;
-            Database = connectionSection[nameof(Database)].StringValueTrimmed;
-            TablePrefix = connectionSection[nameof(TablePrefix)].StringValueTrimmed;
+            DbServer = connectionSection[nameof(DbServer)].StringValue;
+            DbUsername = connectionSection[nameof(DbUsername)].StringValue;
+            DbPwd = connectionSection[nameof(DbPwd)].StringValue;
+            Database = connectionSection[nameof(Database)].StringValue;
+            TablePrefix = connectionSection[nameof(TablePrefix)].StringValue;
 
             //set scripts
-            PollScriptFilename = scriptSection[nameof(PollScriptFilename)].StringValueTrimmed;
-            GetDetailScriptFilename = scriptSection[nameof(GetDetailScriptFilename)].StringValueTrimmed;
-            UpdateStatusScriptFilename = scriptSection[nameof(UpdateStatusScriptFilename)].StringValueTrimmed;
-            GetFilenameScriptFilename = scriptSection[nameof(GetFilenameScriptFilename)].StringValueTrimmed;
+            PollScriptFilename = scriptSection[nameof(PollScriptFilename)].StringValue;
+            GetDetailScriptFilename = scriptSection[nameof(GetDetailScriptFilename)].StringValue;
+            UpdateStatusScriptFilename = scriptSection[nameof(UpdateStatusScriptFilename)].StringValue;
+            GetFilenameScriptFilename = scriptSection[nameof(GetFilenameScriptFilename)].StringValue;
 
             //set status
             StatusToBePolled = statusSection[nameof(StatusToBePolled)].IntValue;
             StatusToSet = statusSection[nameof(StatusToSet)].IntValue;
 
             //set email
-            SmtpServer = emailSection[nameof(SmtpServer)].StringValueTrimmed;
+            SmtpServer = emailSection[nameof(SmtpServer)].StringValue;
             Port = emailSection[nameof(Port)].IntValue;
-            EmailUsername = emailSection[nameof(EmailUsername)].StringValueTrimmed;
-            EmailPwd = emailSection[nameof(EmailPwd)].StringValueTrimmed;
-            EmailSuffix = emailSection[nameof(EmailSuffix)].StringValueTrimmed;
+            EmailUsername = emailSection[nameof(EmailUsername)].StringValue;
+            EmailPwd = emailSection[nameof(EmailPwd)].StringValue;
+            EmailSuffix = emailSection[nameof(EmailSuffix)].StringValue;
 
             LoadScripts();
         }

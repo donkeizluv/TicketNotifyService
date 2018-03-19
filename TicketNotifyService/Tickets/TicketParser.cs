@@ -18,9 +18,10 @@ namespace TicketNotifyService.Tickets
         public static readonly string CreatedColumnName = "Created";
         public static readonly string FromColumnName = "From";
         public static readonly string FormTypeColumnName = "FormType";
+        public static readonly string TopicColumnName = "Topic";
 
-        public static readonly string TicketSubjectVarName = "subject";
-        public static readonly string TicketBodyVarName = "desc";
+        //public static readonly string TicketSubjectVarName = "subject";
+        public static readonly string TicketBodyVarName = "subject";
 
         public static readonly string GeneralFormType = "New Ticket";
 
@@ -69,15 +70,15 @@ namespace TicketNotifyService.Tickets
                             ticket.Body = (row[FieldContainer.FieldValueColumnName] ?? string.Empty).ToString();
                     }
                 }
-                if (ticket.Subject == null) //in New Ticket form type -> subject var
-                {
-                    var value = row[FormTypeColumnName];
-                    if (string.Compare(value.ToString(), GeneralFormType, true) == 0)
-                    {
-                        if (string.Compare(row[FieldContainer.FieldVarColumnName].ToString(), TicketSubjectVarName, true) == 0)
-                            ticket.Subject = (row[FieldContainer.FieldValueColumnName] ?? string.Empty).ToString();
-                    }
-                }
+                //if (ticket.Subject == null) //in New Ticket form type -> subject var
+                //{
+                //    var value = row[TopicColumnName];
+                //    if (string.Compare(value.ToString(), GeneralFormType, true) == 0)
+                //    {
+                //        if (string.Compare(row[FieldContainer.FieldVarColumnName].ToString(), TicketSubjectVarName, true) == 0)
+                //            ticket.Subject = (row[FieldContainer.FieldValueColumnName] ?? string.Empty).ToString();
+                //    }
+                //}
                 if (ticket.FormType == null)
                 {
                     var value = row[FormTypeColumnName];
@@ -96,6 +97,7 @@ namespace TicketNotifyService.Tickets
                 var varNameValue = row[FieldContainer.FieldVarColumnName];
                 var labelValue = row[FieldContainer.FieldLabelColumnName];
                 var fieldValue = row[FieldContainer.FieldValueColumnName];
+                ticket.Subject = row[TopicColumnName].ToString();
 
                 var container = new FieldContainer()
                 {

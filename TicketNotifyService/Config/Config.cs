@@ -1,4 +1,5 @@
 ﻿using MimeKit;
+using Newtonsoft.Json;
 using SharpConfig;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace TicketNotifyService.Config
     public class ServiceConfig
     {
         private Configuration _config;
-
+        private string _jsonMap;
         internal static string ScriptFolderPath => string.Format(@"{0}\{1}", Program.ExeDir, SCRIPT_FOLDER);
         private const string SCRIPT_FOLDER = "Scripts";
         //missing:
@@ -22,9 +23,12 @@ namespace TicketNotifyService.Config
         //general
         public int PollRate { get; private set; }
         public string AttachmentRootFolder { get; set; }
-        public string HelpdeskEmail { get; set; }
+        public string NotifyTo { get; set; }
         public bool VerboseLog { get; set; }
         public string OpenTicketUrl { get; set; }
+        public bool UseMap { get; set; }
+        //public Dictionary<int, string> Map { get; set; }
+        public NotifyMap NotifyMapper { get; set; }
 
         //connection
         public string DbServer { get; private set; }
@@ -56,11 +60,11 @@ namespace TicketNotifyService.Config
         public string EmailPwd { get; private set; }
         public string EmailSuffix { get; private set; }
 
-        public InternetAddress HelpdeskAddress
+        public InternetAddress DefaultNotifyAddress
         {
             get
             {
-                return new MailboxAddress(HelpdeskEmail);
+                return new MailboxAddress(NotifyTo);
             }
         }
         public InternetAddress FromAddress
@@ -89,9 +93,10 @@ namespace TicketNotifyService.Config
             }
         }
 
-        public ServiceConfig(Configuration config)
+        public ServiceConfig(Configuration config, string jsonMap)
         {
             _config = config;
+            _jsonMap = jsonMap;
             ReadConfig();
         }
 
@@ -106,9 +111,18 @@ namespace TicketNotifyService.Config
             //set gen
             PollRate = genSection[nameof(PollRate)].IntValue;
             AttachmentRootFolder = genSection[nameof(AttachmentRootFolder)].StringValue;
-            HelpdeskEmail = genSection[nameof(HelpdeskEmail)].StringValue;
+            NotifyTo = genSection[nameof(NotifyTo)].StringValue;
             VerboseLog = genSection[nameof(VerboseLog)].BoolValue;
             OpenTicketUrl = genSection[nameof(OpenTicketUrl)].StringValue;
+            UseMap = genSection[nameof(UseMap)].BoolValue;
+            
+            if(UseMap && !string.IsNullOrEmpty(_jsonMap))
+            {
+                //NotifyMap = JsonConvert.DeserializeObject<Dictionary<int, string>>(_jsonMap);
+                NotifyMapper = JsonConvert.DeserializeObject<NotifyMap>(_jsonMap);
+
+            }
+
 
             //set connection
             DbServer = connectionSection[nameof(DbServer)].StringValue;

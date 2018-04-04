@@ -26,11 +26,13 @@ namespace TicketNotifyService.Emails
 
         private SqlWrapper _wrapper;
         private Ticket _ticket;
+        private ServiceConfig _config;
 
-        public EmailComposer(SqlWrapper sql, Ticket ticket)
+        public EmailComposer(SqlWrapper sql, Ticket ticket, ServiceConfig config)
         {
             _wrapper = sql;
             _ticket = ticket;
+            _config = config;
         }
 
         public MimeMessage ToEmailMessage()
@@ -40,11 +42,8 @@ namespace TicketNotifyService.Emails
             var stringWriter = new StringWriter();
             var email = new MimeMessage();
             //add addresses
-            email.From.Add(Config.FromAddress);
-            var additionalAddress = ParseFieldsToAddress(_ticket.Fields);
-            email.To.AddRange(new []{ Config.HelpdeskAddress, _ticket.From });
-            email.Cc.AddRange(additionalAddress);
-            email.Subject = _ticket.Subject == string.Empty? SubjectName(_ticket) : _ticket.Subject;
+            AddRecipient(email, _ticket, _config);
+
 
             //email content
             using (var writer = new HtmlTextWriter(stringWriter))
@@ -76,7 +75,7 @@ namespace TicketNotifyService.Emails
 
                 writer.RenderBeginTag(HtmlTextWriterTag.P);
                 writer.RenderBeginTag(HtmlTextWriterTag.H4);
-                writer.Write($"Id: {_ticket.TicketId}");
+                writer.Write($"Ticket number: {_ticket.TicketNumber}");
                 writer.RenderEndTag();
                 writer.RenderEndTag();
 
@@ -107,6 +106,40 @@ namespace TicketNotifyService.Emails
                 AddBody(email, attParts, stringWriter.ToString());
             }
             return email;
+        }
+        private static void AddRecipient(MimeMessage email, Ticket ticket, ServiceConfig config)
+        {
+            email.From.Add(Config.FromAddress);
+            var additionalAddress = ParseFieldsToAddress(ticket.Fields);
+            var toList = new List<InternetAddress>();
+
+            //Use map or default
+            if(config.UseMap)
+            {
+                int topic = ticket.TopicId ?? -1;
+                //Find if this helptopic id is mapped
+                if(config.NotifyMapper.Map.ContainsKey(topic))
+                {
+                    foreach (var item in config.NotifyMapper.Map[topic])
+                    {
+                        toList.Add(new MailboxAddress(item));
+                    }
+                }
+                else
+                {
+                    //Use default in case not mapped
+                    toList.Add(Config.DefaultNotifyAddress);
+                }
+                toList.Add(ticket.From);
+                email.To.AddRange(toList);
+            }
+            else
+            {
+                email.To.AddRange(new[] { Config.DefaultNotifyAddress, ticket.From });
+            }
+            email.Cc.AddRange(additionalAddress);
+            email.Subject = ticket.Subject == string.Empty ? SubjectName(ticket) : ticket.Subject;
+
         }
         private static void AddBody(MimeMessage mail, List<MimePart> attParts, string body)
         {

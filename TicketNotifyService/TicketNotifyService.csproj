@@ -85,6 +85,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config\NotifyMap.cs" />
     <Compile Include="Emails\EmailComposer.cs" />
     <Compile Include="Emails\SmtpMailSender.cs" />
     <Compile Include="Logger\ILogger.cs" />
@@ -121,6 +122,9 @@
     <Content Include="Config\localdb.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="Config\map.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

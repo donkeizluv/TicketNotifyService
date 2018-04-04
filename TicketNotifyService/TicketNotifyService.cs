@@ -18,7 +18,9 @@ namespace TicketNotifyService
     public partial class TicketNotifyService : ServiceBase
     {
         internal static string ConfigFileName => string.Format(@"{0}\{1}", Program.ExeDir, CONFIG_FILE_NAME);
+        internal static string ConfigJSONMap => string.Format(@"{0}\{1}", Program.ExeDir, CONFIG_JSON_MAP);
         private const string CONFIG_FILE_NAME = "config.ini";
+        private const string CONFIG_JSON_MAP = "map.json";
 
 
         private static void Log(string log, bool isVerbose = false)
@@ -172,7 +174,7 @@ namespace TicketNotifyService
                 var mails = new List<MimeMessage>();
                 foreach (var ticket in ticketList)
                 {
-                    using (var parser = new EmailComposer(sql, ticket))
+                    using (var parser = new EmailComposer(sql, ticket, _config))
                     {
                         //try pattern
                         //or cant fail here?
@@ -211,7 +213,8 @@ namespace TicketNotifyService
             try
             {
                 var config = Configuration.LoadFromFile(ConfigFileName);
-                _config = new ServiceConfig(config);
+                TryGetJsonMap(out var jsonMap);
+                _config = new ServiceConfig(config, jsonMap);
                 return true;
             }
             catch (Exception ex)
@@ -222,7 +225,19 @@ namespace TicketNotifyService
                 return false;
             }
         }
-
+        private bool TryGetJsonMap(out string json)
+        {
+            json = string.Empty;
+            try
+            {
+                json = File.ReadAllText($"{ConfigJSONMap}");
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
         protected override void OnStop()
         {
 

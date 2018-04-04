@@ -6,7 +6,9 @@ namespace TicketNotifyService.Tickets
 {
     public class Ticket
     {
+        public int? TopicId { get; set; }
         public int? TicketId { get; set; }
+        public string TicketNumber { get; set; }
         public DateTime? Created { get; set; }
         public MailboxAddress From { get; set; }
         //public InternetAddressList To { get; set; }

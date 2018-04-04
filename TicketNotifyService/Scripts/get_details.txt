@@ -1,10 +1,11 @@
-﻿SELECT {prefix}ticket.ticket_id as `TicketId`, {prefix}ticket.created as `Created`, {prefix}user_email.address AS `From`, {prefix}form.title AS `FormType`, {prefix}form_field.name AS `FieldVarName`, {prefix}form_field.label AS `FieldLabel`, {prefix}form_entry_values.value AS `FieldValue`, {prefix}help_topic.topic as `Topic`
-FROM {prefix}ticket 
+﻿SELECT DISTINCT ost_help_topic.topic_id as `TopicId`, ost_ticket.number as `TicketNumber`, ost_ticket.ticket_id as `TicketId`, ost_ticket.created as `Created`, ost_user_email.address AS `From`, ost_form.title AS `FormType`, ost_form_field.name AS `FieldVarName`, ost_form_field.label AS `FieldLabel`, ost_form_entry_values.value AS `FieldValue`, ost_help_topic.topic as `Topic`
+FROM ost_ticket 
 LEFT JOIN {prefix}help_topic ON {prefix}ticket.topic_id = {prefix}help_topic.topic_id
 LEFT JOIN {prefix}form_entry ON {prefix}ticket.ticket_id = {prefix}form_entry.object_id
 LEFT JOIN {prefix}form_entry_values ON  {prefix}form_entry_values.entry_id = {prefix}form_entry.id
 LEFT JOIN {prefix}form_field ON {prefix}form_field.id = {prefix}form_entry_values.field_id
 LEFT JOIN {prefix}form ON {prefix}form.id = {prefix}form_field.form_id
+LEFT JOIN {prefix}help_topic_form ON {prefix}help_topic_form.form_id = {prefix}form_entry.form_id
 LEFT JOIN {prefix}user_email ON {prefix}user_email.user_id = {prefix}ticket.user_id
 LEFT JOIN {prefix}thread ON {prefix}ticket.ticket_id = {prefix}thread.id
-WHERE ticket_id = {ticket_id};
+WHERE JSON_CONTAINS({prefix}help_topic_form.extra, {prefix}form_field.id, '$.disable') = 0 AND ticket_id = {ticket_id}

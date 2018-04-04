@@ -8,9 +8,10 @@ namespace TicketNotifyService.Tickets
 {
     public class FieldContainer
     {
-        public static readonly List<string> EmailVarNameList = new List<string>() { "direct_sup1", "direct_sup2", "bds_email" }; //configurable?
-        public static readonly List<string> AttachmentVarNameList = new List<string>() { "pics" };
-        public static readonly List<string> JsonVarNameList = new List<string>() { "type" };
+        //Move these to config!!!!!!!!
+        public static readonly List<string> EmailVarNameList = new List<string>() { "direct_sup1", "direct_sup2", "bds_email", "email1", "email2", "email3" }; //configurable?
+        public static readonly List<string> AttachmentVarNameList = new List<string>() { "pics", "file" };
+        public static readonly List<string> JsonVarNameList = new List<string>() { "type", "region" };
         public static readonly List<string> ChoicesVarNameList = new List<string>() { "account_type", "printer" };
         public static readonly List<string> ExcludeVarNameList = new List<string>() { "subject", "desc", "priority" };
 

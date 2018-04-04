@@ -58,6 +58,7 @@ namespace TicketNotifyService.SQL
         }
 
         private const string ToStatusToken = "{to_status}";
+        //Set status flag to "Notified"
         public void SetStatus(int ticketId)
         {
             //may need to use Execute instead of query

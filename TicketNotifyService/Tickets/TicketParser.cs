@@ -14,7 +14,9 @@ namespace TicketNotifyService.Tickets
         private static void Log(string log) => _logger.Log(log);
         private static readonly ILogger _logger = LogManager.GetLogger(typeof(TicketParser));
 
+        public static readonly string TopicIdColumnName = "TopicId";
         public static readonly string TicketIdColumnName = "TicketId";
+        public static readonly string TicketNumberColumnName = "TicketNumber";
         public static readonly string CreatedColumnName = "Created";
         public static readonly string FromColumnName = "From";
         public static readonly string FormTypeColumnName = "FormType";
@@ -35,6 +37,17 @@ namespace TicketNotifyService.Tickets
 
             foreach (var row in detailRows)
             {
+                if (ticket.TopicId == null) //if not set
+                {
+                    var value = row[TopicIdColumnName];
+                    if (value == null)
+                        throw new InvalidDataException("TopicId is null");
+                    if (!int.TryParse(value.ToString(), out var intValue))
+                    {
+                        throw new InvalidDataException("Fail to parse TicketId to Int");
+                    }
+                    ticket.TopicId = intValue;
+                }
                 if (ticket.TicketId == null) //if not set
                 {
                     var value = row[TicketIdColumnName];
@@ -45,6 +58,10 @@ namespace TicketNotifyService.Tickets
                         throw new InvalidDataException("Fail to parse TicketId to Int");
                     }
                     ticket.TicketId = intValue;
+                }
+                if(string.IsNullOrEmpty(ticket.TicketNumber))
+                {
+                    ticket.TicketNumber = row[TicketNumberColumnName].ToString();
                 }
                 if (ticket.Created == null)
                 {
@@ -66,6 +83,7 @@ namespace TicketNotifyService.Tickets
                     var value = row[FormTypeColumnName];
                     if(string.Compare(value.ToString(), GeneralFormType, true) == 0)
                     {
+                        //MAGIC: WTF is this?
                         if (string.Compare(row[FieldContainer.FieldVarColumnName].ToString(), TicketBodyVarName, true) == 0)
                             ticket.Body = (row[FieldContainer.FieldValueColumnName] ?? string.Empty).ToString();
                     }

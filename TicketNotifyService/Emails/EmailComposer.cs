@@ -182,29 +182,27 @@ namespace TicketNotifyService.Emails
                 {
                     //handle attachments
                     var pairs = JsonToKeyPairs(value);
-                    //value = KeyPairsToString(pairs, true);
+                    if (pairs == null) continue; //Failed to parse
                     foreach (var pair in pairs)
                     {
                         var fileId = pair.Value;
-                        //_logger.Log($"Get fileId: {fileId}");
-                        var fileName = _wrapper.GetFilename(fileId);
-                        if (string.IsNullOrEmpty(fileName))
+                        if (!_wrapper.GetFileName(fileId, out string userFileName, out string systemFileKey))
                         {
                             Log($"Cant get Filename for FileId [{fileId}] -> Skip this att");
                             continue; //should not happen tho
                         }
 
-                        var fullPath = SearchFile(Config.AttachmentRootFolder, fileName);
+                        var fullPath = SearchFile(Config.AttachmentRootFolder, systemFileKey);
                         if (!string.IsNullOrEmpty(fullPath))
                         {
-                            attachmentParts.Add(MakeAttachment(fullPath, pair.Key));
+                            attachmentParts.Add(MakeAttachment(fullPath, userFileName));
                         }
                         else
                         {
-                            Log($"Cant find file {fileName} -> Skip this att");
+                            Log($"Cant find file {systemFileKey} -> Skip this att");
                         }
                     }
-                    //dont values print for attachments
+                    //Dont print values for attachments
                     continue;
                 }
                 if (con.IsChoices || con.IsJSONArray)
@@ -233,23 +231,43 @@ namespace TicketNotifyService.Emails
             return builder.ToString().Remove(builder.ToString().Length - listSep.Length, listSep.Length);
         }
 
-        private static List<KeyValuePair<string, string>> JsonToKeyPairs(string json)
+        private static List<KeyValuePair<string, string>> JsonToKeyPairs(string json, string defaultPropName = "value")
         {
             var list = new List<KeyValuePair<string, string>>();
             try
             {
+                var deserialized = JsonConvert.DeserializeObject(json);
                 
-                var array = JObject.Parse(json);
-                foreach (JProperty prop in array.Properties())
+                if(deserialized is JArray)
                 {
-                    list.Add(new KeyValuePair<string, string>(prop.Name, prop.Value.ToString()));
+                    int count = 1;
+                    foreach (var item in ((JArray)deserialized))
+                    {
+                        list.Add(new KeyValuePair<string, string>($"{defaultPropName}{count}", item.Value<string>()));
+                        count++;
+                    }
+                    return list;
                 }
-                return list;
+                if (deserialized is JObject)
+                {
+                    foreach (JProperty prop in ((JObject)deserialized).Properties())
+                    {
+                        list.Add(new KeyValuePair<string, string>(prop.Name, prop.Value.ToString()));
+                    }
+                    return list;
+                }
+                Log($"Parse JSON Unknown object type: {deserialized.GetType()}");
+                return null;
             }
             catch (JsonReaderException ex)
             {
-                Log($"Parse JSON object failed: {json}");
-                return list;
+                Log($"Parse JSON failed: {json}");
+                return null;
+            }
+            catch(JsonSerializationException ex)
+            {
+                Log($"Parse JSON failed: {json}");
+                return null;
             }
 
         }

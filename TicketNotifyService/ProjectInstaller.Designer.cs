@@ -40,8 +40,8 @@
             // serviceInstaller1
             // 
             this.serviceInstaller1.Description = "Poll osTicket Db to notify ticket";
-            this.serviceInstaller1.DisplayName = "osTicketNotify";
-            this.serviceInstaller1.ServiceName = "osTicketNotify";
+            this.serviceInstaller1.DisplayName = "osTicketNotify_LO";
+            this.serviceInstaller1.ServiceName = "osTicketNotify_LO";
             // 
             // ProjectInstaller
             // 

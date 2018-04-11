@@ -58,6 +58,7 @@ namespace TicketNotifyService.Tickets
                         throw new InvalidDataException("Fail to parse TicketId to Int");
                     }
                     ticket.TicketId = intValue;
+                    _logger.Log($"ticket id:{intValue}");
                 }
                 if(string.IsNullOrEmpty(ticket.TicketNumber))
                 {

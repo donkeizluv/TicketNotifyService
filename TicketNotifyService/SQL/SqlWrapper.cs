@@ -67,9 +67,14 @@ namespace TicketNotifyService.SQL
         }
 
         private const string FileIdToken = "{file_id}";
-        public string GetFilename(string fileId)
+        public bool GetFileName(string fileId, out string userFileName, out string systemFileKey)
         {
-            return _connection.QueryFirstOrDefault<string>(_config.GetFilenameScript.Replace(FileIdToken, fileId.ToString()), commandType: CommandType.Text);
+            systemFileKey = userFileName = string.Empty;
+            var row = _connection.QueryFirstOrDefault<dynamic>(_config.GetFilenameScript.Replace(FileIdToken, fileId), commandType: CommandType.Text);
+            if (row == null) return false;
+            userFileName = row.FileName;
+            systemFileKey = row.FileKey;
+            return true;
         }
         //~SqlWrapper()
         //{
